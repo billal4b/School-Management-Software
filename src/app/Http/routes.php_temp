@@ -1,0 +1,675 @@
+<?php
+
+/*
+  |--------------------------------------------------------------------------
+  | Application Routes
+  |--------------------------------------------------------------------------
+  |
+  | Here is where you can register all of the routes for an application.
+  | It's a breeze. Simply tell Laravel the URIs it should respond to
+  | and give it the controller to call when that URI is requested.
+  |
+ */
+
+
+Route::filter('guest', function() {
+    if (Auth::check()) {
+        return redirect()->route('LoggedIn.Home.OnlineInformation');
+    }
+});
+
+Route::get('/', function () {
+    return redirect()->route('Authentication.GetLogin');
+});
+Route::get('auth/login', function () {
+    return redirect()->route('Authentication.GetLogin');
+});
+
+Route::group(array(
+    'prefix' => 'Authentication',
+    'as' => 'Authentication.'
+        ), function() {
+
+    Route::get('Login', array(
+        'uses' => 'AuthenticationController@GetLogin',
+        'as' => 'GetLogin'
+    ))->before('guest');
+    Route::post('Login', array(
+        'uses' => 'AuthenticationController@PostLogin',
+        'as' => 'PostLogin'
+    ))->before('guest');
+});
+
+Route::group(array(
+    'middleware' => 'auth',
+    'prefix' => '!',
+    'namespace' => 'LoggedIn',
+    'as' => 'LoggedIn.',
+        ), function() {
+
+    Route::group(array(
+        'prefix' => 'Home',
+        'as' => 'Home.',
+            ), function() {
+
+        Route::get('OnlineInformation', array(
+            'uses' => 'HomeController@OnlineInformation',
+            'as' => 'OnlineInformation',
+        ));
+        Route::get('Logout', array(
+            'uses' => 'HomeController@Logout',
+            'as' => 'Logout',
+        ));
+    });
+
+    Route::group(array(
+        'prefix' => 'Settings',
+        'as' => 'Settings.',
+            ), function() {
+
+        Route::get('/', array(
+            'uses' => 'SettingsController@Index',
+            'as' => 'Index',
+        ));
+
+        Route::group(array(
+            'namespace' => 'Settings'
+                ), function() {
+
+            //****** student view*************//
+
+            Route::resource('Student', 'StudentController', array(
+                'names' => array(
+                    'index' => 'studentsView.index',
+                    'edit' => 'studentsView.edit',
+                    'update' => 'studentsView.update',
+                )
+            ));
+            Route::get('Student/{BranchVersionID}/{ClassID}', array(
+                'uses' => 'StudentController@getBranchSection'
+            ))->where(array(
+                'BranchVersionID', '[0-9]+',
+                'ClassID', '[0-9]+',
+            ));
+            Route::post('Student/View', array(
+                'uses' => 'StudentController@view'
+            ));
+
+
+
+            Route::resource('ExamSubHead', 'ExamSubHeadController', array(
+                'names' => array(
+                    'index' => 'ExamSubHead.Index',
+                    'create' => 'ExamSubHead.Create',
+                    'store' => 'ExamSubHead.Store',
+                    'edit' => 'ExamSubHead.Edit',
+                    'update' => 'ExamSubHead.Update',
+                //'destroy' => 'Teacher.Delete',
+                )
+            ));
+            Route::get('ExamSubHead/GetExamTypesByBranchAndClassAndGroupId/{IbvID}/{ClassID}/{GroupID}', array(
+                'as' => 'GetExamTypesByBranchAndClassAndGroupId',
+                'uses' => 'ExamSubHeadController@GetExamTypesByBranchAndClassAndGroupId',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+            ));
+            Route::get('ExamSubHead/GetExamHeadsByBranchAndClassAndGroupId/{IbvID}/{ClassID}/{GroupID}', array(
+                'as' => 'GetExamHeadsByBranchAndClassAndGroupId',
+                'uses' => 'ExamSubHeadController@GetExamHeadsByBranchAndClassAndGroupId',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+            ));
+
+
+            Route::group(array(
+                'prefix' => 'StudentViewPrint',
+                'as' => 'studentViewPrint.'
+                    ), function() {
+                Route::get('Student/Print/{branchVersion?}/{class?}/{section?}/{group?}', array(
+                    'as' => 'studentPrint',
+                    'uses' => 'StudentController@print_student'
+                ));
+                Route::get('Student/PrintBlankMarksSheet/{branchVersion?}/{class?}/{section?}/{group?}', array(
+                    'as' => 'PrintBlankMarksSheet',
+                    'uses' => 'StudentController@PrintBlankMarksSheet'
+                ));
+            });
+
+
+            Route::get('Teacher/PrintBranchWiseTeachers/{IbvID}', array(
+                'as' => 'PrintBranchWiseTeachers',
+                'uses' => 'TeacherController@PrintBranchWiseTeachers'
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+            ));
+            Route::resource('Teacher', 'TeacherController', array(
+                'names' => array(
+                    'index' => 'Teacher.Index',
+                    'create' => 'Teacher.Create',
+                    'store' => 'Teacher.Store',
+                    'edit' => 'Teacher.Edit',
+                    'update' => 'Teacher.Update',
+                    'destroy' => 'Teacher.Delete',
+                )
+            ));
+
+            Route::get('Subject/ShowSubjectsByBranchIDAndClassIDAndGroupID/{IbvID}/{ClassID}/{GroupID}', array(
+                'as' => 'ShowSubjectsByBranchIDAndClassIDAndGroupID',
+                'uses' => 'SubjectController@ShowSubjectsByBranchIDAndClassIDAndGroupID'
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+            ));
+            Route::resource('Subject', 'SubjectController', array(
+                'names' => array(
+                    'index' => 'Subject.Index',
+                    'create' => 'Subject.Create',
+                    'store' => 'Subject.Store',
+                    'edit' => 'Subject.Edit',
+                    'update' => 'Subject.Update',
+                )
+            ));
+
+
+            Route::group(array(
+                'prefix' => 'TeacherPrivilege',
+                'as' => 'TeacherPrivilege.'
+                    ), function() {
+                Route::get('GetTeachersByInstituteBranchVersionID/{IbvID}', array(
+                    'as' => 'GetTeachersByInstituteBranchVersionID',
+                    'uses' => 'TeacherPrivilegeController@GetTeachersByInstituteBranchVersionID',
+                ))->where('IbvID', '[0-9]+');
+                Route::get('GetAssignedSubjectsByTeacherID/{TeacherID}/{IbvID}', array(
+                    'as' => 'GetAssignedSubjectsByTeacherID',
+                    'uses' => 'TeacherPrivilegeController@GetAssignedSubjectsByTeacherID',
+                ))->where(array(
+                    'TeacherID' => '[0-9]+',
+                    'IbvID' => '[0-9]+',
+                ));
+                Route::post('AssignedSubjectsToTeacherID', array(
+                    'as' => 'AssignedSubjectsToTeacherID',
+                    'uses' => 'TeacherPrivilegeController@AssignedSubjectsToTeacherID',
+                ));
+                Route::get('GetSectionsByClassIDAndGroupIDAndIbvID/{ClassID}/{GroupID}/{IbvID}', array(
+                    'as' => 'GetSectionsByClassIDAndGroupIDAndIbvID',
+                    'uses' => 'TeacherPrivilegeController@GetSectionsByClassIDAndGroupIDAndIbvID',
+                ))->where(array(
+                    'ClassID' => '[0-9]+',
+                    'GroupID' => '[0-9]+',
+                    'IbvID' => '[0-9]+',
+                ));
+                Route::get('GetSubjectsByClassIDAndGroupIDAndIbvID/{ClassID}/{GroupID}/{IbvID}', array(
+                    'as' => 'GetSubjectsByClassIDAndGroupIDAndIbvID',
+                    'uses' => 'TeacherPrivilegeController@GetSubjectsByClassIDAndGroupIDAndIbvID',
+                ))->where(array(
+                    'ClassID' => '[0-9]+',
+                    'GroupID' => '[0-9]+',
+                    'IbvID' => '[0-9]+',
+                ));
+                Route::post('UpdateStatus', array(
+                    'as' => 'UpdateStatus',
+                    'uses' => 'TeacherPrivilegeController@UpdateStatus',
+                ));
+            });
+
+
+            Route::resource('TeacherPrivilege', 'TeacherPrivilegeController', array(
+                'names' => array(
+                    'index' => 'TeacherPrivilege.Index',
+                    'create' => 'TeacherPrivilege.Create',
+                //'store' => 'TeacherPrivilege.Store',
+                )
+            ));
+
+            Route::group(array(
+                'prefix' => 'ClassTeacher',
+                'as' => 'ClassTeacher.'
+                    ), function() {
+                Route::get('GetTeachersByInstituteBranchVersionID/{IbvID}', array(
+                    'as' => 'GetTeachersByInstituteBranchVersionID',
+                    'uses' => 'ClassTeacherController@GetTeachersByInstituteBranchVersionID',
+                ))->where('IbvID', '[0-9]+');
+                Route::get('GetAssignedClassTeachersByTeacherID/{TeacherID}/{IbvID}', array(
+                    'as' => 'GetAssignedClassTeachersByTeacherID',
+                    'uses' => 'ClassTeacherController@GetAssignedClassTeachersByTeacherID',
+                ))->where(array(
+                    'TeacherID' => '[0-9]+',
+                    'IbvID' => '[0-9]+',
+                ));
+                Route::post('AssignedClassTeachersToTeacherID', array(
+                    'as' => 'AssignedClassTeachersToTeacherID',
+                    'uses' => 'ClassTeacherController@AssignedClassTeachersToTeacherID',
+                ));
+                Route::get('GetGroupsByClassIDAndTeacherID/{ClassID}/{TeacherID}', array(
+                    'as' => 'GetGroupsByClassIDAndTeacherID',
+                    'uses' => 'ClassTeacherController@GetGroupsByClassIDAndTeacherID',
+                ))->where(array(
+                    'ClassID' => '[0-9]+',
+                    'TeacherID' => '[0-9]+',
+                ));
+                Route::get('GetSectionsByClassIDTeacherIDAndGroupID/{ClassID}/{TeacherID}/{GroupID}', array(
+                    'as' => 'GetSectionsByClassIDTeacherIDAndGroupID',
+                    'uses' => 'ClassTeacherController@GetSectionsByClassIDTeacherIDAndGroupID',
+                ))->where(array(
+                    'ClassID' => '[0-9]+',
+                    'GroupID' => '[0-9]+',
+                    'TeacherID' => '[0-9]+',
+                ));
+                Route::post('UpdateStatus', array(
+                    'as' => 'UpdateStatus',
+                    'uses' => 'ClassTeacherController@UpdateStatus',
+                ));
+            });
+
+
+            Route::resource('ClassTeacher', 'ClassTeacherController', array(
+                'names' => array(
+                    'index' => 'ClassTeacher.Index',
+                    'create' => 'ClassTeacher.Create',
+                //'store' => 'TeacherPrivilege.Store',
+                )
+            ));
+
+            Route::resource('ExamType', 'ExamTypeController', array(
+                'names' => array(
+                    'index' => 'ExamType.Index',
+                    'create' => 'ExamType.Create',
+                    'store' => 'ExamType.Store',
+                    'edit' => 'ExamType.Edit',
+                    'update' => 'ExamType.Update',
+                //'destroy' => 'Teacher.Delete',
+                )
+            ));
+
+            Route::resource('ExamHead', 'ExamHeadController', array(
+                'names' => array(
+                    'index' => 'ExamHead.Index',
+                    'create' => 'ExamHead.Create',
+                    'store' => 'ExamHead.Store',
+                    'edit' => 'ExamHead.Edit',
+                    'update' => 'ExamHead.Update',
+                //'destroy' => 'Teacher.Delete',
+                )
+            ));
+
+
+            Route::get('MarksDistribution/GetSectionsByBranchIdAndClassIdAndGroupId/{IbvID}/{ClassID}/{GroupID}', array(
+                'as' => 'GetSectionsByBranchIdAndClassIdAndGroupId',
+                'uses' => 'MarksDistributionController@GetSectionsByBranchIdAndClassIdAndGroupId',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+            ));
+            Route::post('MarksDistribution/Show', array(
+                'as' => 'MarksDistribution.Show',
+                'uses' => 'MarksDistributionController@Show',
+            ));
+            Route::post('MarksDistribution/Save', array(
+                'as' => 'MarksDistribution.Save',
+                'uses' => 'MarksDistributionController@Save',
+            ));
+            Route::post('MarksDistribution/SaveSBAPassMarks', array(
+                'as' => 'MarksDistribution.SaveSBAPassMarks',
+                'uses' => 'MarksDistributionController@SaveSBAPassMarks',
+            ));
+            Route::resource('MarksDistribution', 'MarksDistributionController', array(
+                'names' => array(
+                    'index' => 'MarksDistribution.Index',
+                    'create' => 'MarksDistribution.Create',
+                    'store' => 'MarksDistribution.Store',
+                    'edit' => 'MarksDistribution.Edit',
+                    'update' => 'MarksDistribution.Update',
+                //'destroy' => 'Teacher.Delete',
+                )
+            ));
+
+
+
+            
+        });
+
+        //Route::resource('Teacher', '');
+    });
+
+    Route::group(array(
+        'prefix' => 'Attendance',
+        'as' => 'Attendance.',
+        'namespace' => 'Attendance',
+            ), function() {
+
+        Route::group(array(
+            'prefix' => 'Student',
+            'as' => 'Student.',
+                ), function() {
+
+            Route::get('/', array(
+                'as' => 'Index',
+                'uses' => 'StudentController@Index',
+            ));
+            Route::post('SaveAttendance', array(
+                'as' => 'SaveAttendance',
+                'uses' => 'StudentController@SaveAttendance',
+            ));
+
+            Route::get('GetSectionsByClassIDAndGroupIDAndIbvID/{IbvID}/{ClassID}', array(
+                'as' => 'GetSectionsByClassIDAndGroupIDAndIbvID',
+                'uses' => 'StudentController@GetSectionsByClassIDAndGroupIDAndIbvID',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+            ));
+
+            Route::get('GetStudentsForAttendanceByClassIDAndGroupIDAndIbvIDAndSectionID/{IbvID}/{ClassID}/{GroupID}/{SectionID}/{AttendanceDateFrom}/{AttendanceDateTo}', array(
+                'as' => 'GetStudentsForAttendanceByClassIDAndGroupIDAndIbvIDAndSectionID',
+                'uses' => 'StudentController@GetStudentsForAttendanceByClassIDAndGroupIDAndIbvIDAndSectionID',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+                'SectionID' => '[0-9]+',
+                'AttendanceDateFrom' => '[0-9-]+',
+                'AttendanceDateTo' => '[0-9-]+',
+            ));
+        });
+    });
+
+    Route::group(array(
+        'prefix' => 'SMS',
+        'as' => 'SMS.',
+        'namespace' => 'SMS',
+            ), function() {
+
+        Route::group(array(
+            'prefix' => 'Student',
+            'as' => 'Student.',
+                ), function() {
+
+            Route::get('/', array(
+                'as' => 'Index',
+                'uses' => 'StudentController@Index',
+            ));
+            Route::post('SendSMS', array(
+                'as' => 'SaveAttendance',
+                'uses' => 'StudentController@SendSMS',
+            ));
+//
+            Route::get('GetSectionsByClassIDAndGroupIDAndIbvID/{IbvID}/{ClassID}', array(
+                'as' => 'GetSectionsByClassIDAndGroupIDAndIbvID',
+                'uses' => 'StudentController@GetSectionsByClassIDAndGroupIDAndIbvID',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+            ));
+//            
+            Route::get('GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID/{IbvID}/{ClassID}/{GroupID}/{SectionID}', array(
+                'as' => 'GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID',
+                'uses' => 'StudentController@GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+                'SectionID' => '[0-9]+',
+            ));
+        });
+
+        Route::group(array(
+            'prefix' => 'GeneralStudent',
+            'as' => 'GeneralStudent.',
+                ), function() {
+
+            Route::get('/', array(
+                'as' => 'Index',
+                'uses' => 'GeneralStudentController@Index',
+            ));
+            Route::post('SendSMS', array(
+                //'as' => 'SaveAttendance',
+                'uses' => 'GeneralStudentController@SendSMS',
+            ));
+        });
+
+        Route::group(array(
+            'prefix' => 'GeneralTeacher',
+            'as' => 'GeneralTeacher.',
+                ), function() {
+
+            Route::get('/', array(
+                'as' => 'Index',
+                'uses' => 'GeneralTeacherController@Index',
+            ));
+            Route::post('SendSMS', array(
+                //'as' => 'SaveAttendance',
+                'uses' => 'GeneralTeacherController@SendSMS',
+            ));
+        });
+    });
+
+    Route::group(array(
+        'prefix' => 'Result',
+        'as' => 'Result.',
+        'namespace' => 'Result',
+            ), function() {
+
+        Route::group(array(
+            'prefix' => 'MarksInput',
+            'as' => 'MarksInput.',
+                ), function() {
+
+            Route::get('/', array(
+                'as' => 'Index',
+                'uses' => 'MarksInputController@Index',
+            ));
+            Route::get('GetSectionsByClassIDTeacherIDAndGroupID/{ClassID}/{TeacherID}/{GroupID}/{IbvID}', array(
+                'as' => 'GetSectionsByClassIDTeacherIDAndGroupID',
+                'uses' => 'MarksInputController@GetSectionsByClassIDTeacherIDAndGroupID',
+            ))->where(array(
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+                'TeacherID' => '[0-9]+',
+                'IbvID' => '[0-9]+',
+            ));
+            Route::get('GetStudentsByClassIDAndGroupIDAndSectionIDAndIbvID/{IbvID}/{ClassID}/{GroupID}/{SectionID}', array(
+                'as' => 'GetStudentsByClassIDAndGroupIDAndSectionIDAndIbvID',
+                'uses' => 'MarksInputController@GetStudentsByClassIDAndGroupIDAndSectionIDAndIbvID',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+                'SectionID' => '[0-9]+',
+            ));
+//            Route::post('SendSMS', array(
+//                'as' => 'SaveAttendance',
+//                'uses' => 'StudentController@SendSMS',
+//            ));
+////
+            Route::get('GetSubjectsByClassIDTeacherIDAndGroupID/{IbvID}/{ClassID}/{TeacherID}/{GroupID}/{SectionID}', array(
+                'as' => 'GetSubjectsByClassIDTeacherIDAndGroupID',
+                'uses' => 'MarksInputController@GetSubjectsByClassIDTeacherIDAndGroupID',
+            ))->where(array(
+                'IbvID' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'TeacherID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+                'SectionID' => '[0-9]+',
+            ));
+//            Route::get('GetExamSubHeadsByClassIDTeacherIDAndGroupIDExamTypeExamHeadSection/{IbvID}/{ClassID}/{TeacherID}/{GroupID}/{SectionID}/{ExamTypeID}/{ExamHeadID}', array(
+//                'as' => 'GetExamSubHeadsByClassIDTeacherIDAndGroupIDExamTypeExamHeadSection',
+//                'uses' => 'MarksInputController@GetExamSubHeadsByClassIDTeacherIDAndGroupIDExamTypeExamHeadSection',
+//            ))->where(array(
+//                'IbvID' => '[0-9]+',
+//                'ClassID' => '[0-9]+',
+//                'TeacherID' => '[0-9]+',
+//                'GroupID' => '[0-9]+',
+//                'SectionID' => '[0-9]+',
+//                'ExamTypeID' => '[0-9]+',
+//                'ExamHeadID' => '[0-9]+',
+//            ));
+            Route::post('Show', array(
+                'as' => 'MarksInput.Show',
+                'uses' => 'MarksInputController@Show',
+            ));
+            Route::post('Save', array(
+                'as' => 'MarksInput.Save',
+                'uses' => 'MarksInputController@Save',
+            ));
+            Route::get('MarksView/{Branch}/{ClassID}/{GroupID}/{ExamTypeID}/{ExamHeadID}/{Role}', array(
+                'as' => 'MarksView',
+                'uses' => 'MarksInputController@MarksView',
+            ))->where(array(
+                'Branch' => '[0-9]+',
+                'ClassID' => '[0-9]+',
+                'GroupID' => '[0-9]+',
+                'Role' => '[0-9]+',
+            ));
+////            
+//
+//            Route::get('GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID/{IbvID}/{ClassID}/{GroupID}/{SectionID}', array(
+//                'as' => 'GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID',
+//                'uses' => 'StudentController@GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID',
+//            ))->where(array(
+//                'IbvID' => '[0-9]+',
+//                'ClassID' => '[0-9]+',
+//                'GroupID' => '[0-9]+',
+//                'SectionID' => '[0-9]+',
+//            ));
+            
+            Route::get('process', array('uses' => 'MarksInputController@process'));
+        });
+
+        Route::group(array(
+            'prefix' => 'MarksView',
+            'as' => 'MarksView.',
+                ), function() {
+
+            Route::get('/', array(
+                'as' => 'Index',
+                'uses' => 'MarksViewController@Index',
+            ));
+//            Route::get('GetSectionsByClassIDTeacherIDAndGroupID/{ClassID}/{TeacherID}/{GroupID}/{IbvID}', array(
+//                'as' => 'GetSectionsByClassIDTeacherIDAndGroupID',
+//                'uses' => 'MarksInputController@GetSectionsByClassIDTeacherIDAndGroupID',
+//            ))->where(array(
+//                'ClassID' => '[0-9]+',
+//                'GroupID' => '[0-9]+',
+//                'TeacherID' => '[0-9]+',
+//                'IbvID' => '[0-9]+',
+//            ));
+//            Route::get('GetStudentsByClassIDAndGroupIDAndSectionIDAndIbvID/{IbvID}/{ClassID}/{GroupID}/{SectionID}', array(
+//                'as' => 'GetStudentsByClassIDAndGroupIDAndSectionIDAndIbvID',
+//                'uses' => 'MarksInputController@GetStudentsByClassIDAndGroupIDAndSectionIDAndIbvID',
+//            ))->where(array(
+//                'IbvID' => '[0-9]+',
+//                'ClassID' => '[0-9]+',
+//                'GroupID' => '[0-9]+',
+//                'SectionID' => '[0-9]+',
+//            ));
+//            Route::post('SendSMS', array(
+//                'as' => 'SaveAttendance',
+//                'uses' => 'StudentController@SendSMS',
+//            ));
+////
+//            Route::get('GetSubjectsByClassIDTeacherIDAndGroupID/{IbvID}/{ClassID}/{TeacherID}/{GroupID}/{SectionID}', array(
+//                'as' => 'GetSubjectsByClassIDTeacherIDAndGroupID',
+//                'uses' => 'MarksInputController@GetSubjectsByClassIDTeacherIDAndGroupID',
+//            ))->where(array(
+//                'IbvID' => '[0-9]+',
+//                'ClassID' => '[0-9]+',
+//                'TeacherID' => '[0-9]+',
+//                'GroupID' => '[0-9]+',
+//                'SectionID' => '[0-9]+',
+//            ));
+            Route::post('Show', array(
+                'as' => 'MarksView.Show',
+                'uses' => 'MarksViewController@Show',
+            ));
+
+            Route::get('Print/{Param}', array(
+                'as' => 'MarksView.Print',
+                'uses' => 'MarksViewController@PrintMarksView',
+            ))->where(array(
+                'Param' => '[0-9_-]+',
+            ));
+//            Route::post('Save', array(
+//                'as' => 'MarksInput.Save',
+//                'uses' => 'MarksInputController@Save',
+//            ));
+//            Route::get('MarksView/{Branch}/{ClassID}/{GroupID}/{ExamTypeID}/{ExamHeadID}/{Role}', array(
+//                'as' => 'MarksView',
+//                'uses' => 'MarksInputController@MarksView',
+//            ))->where(array(
+//                'Branch' => '[0-9]+',
+//                'ClassID' => '[0-9]+',
+//                'GroupID' => '[0-9]+',
+//                'Role' => '[0-9]+',
+//            ));
+////            
+//
+//            Route::get('GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID/{IbvID}/{ClassID}/{GroupID}/{SectionID}', array(
+//                'as' => 'GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID',
+//                'uses' => 'StudentController@GetStudentsForSMSByClassIDAndGroupIDAndIbvIDAndSectionID',
+//            ))->where(array(
+//                'IbvID' => '[0-9]+',
+//                'ClassID' => '[0-9]+',
+//                'GroupID' => '[0-9]+',
+//                'SectionID' => '[0-9]+',
+//            ));
+        });
+        
+        Route::group(array(
+            'prefix' => 'Result',
+            'as' => 'Result.'
+        ), function(){
+            Route::get('/', array(
+                'uses' => 'ResultController@Index',
+                'as' => 'Index'
+            ));
+            Route::post('InsertIntoMarksInput', array(
+                'uses' => 'ResultController@InsertIntoMarksInput',
+                'as' => 'InsertIntoMarksInput'
+            ));
+            Route::post('Show', array(
+                'uses' => 'ResultController@Show',
+                'as' => 'Show'
+            ));
+            Route::get('ResultLink/{ExamType}/{Branch}/{ClassID}/{GroupID}/{SectionID}/{StudentID}', array(
+                'uses' => 'ResultController@ResultLink',
+                'as' => 'ResultLink'
+            ));
+        });
+    });
+    
+    Route::group(array(
+                'prefix' => 'MarksAnalysis',
+                'as' => 'MarksAnalysis.',
+                'namespace' => 'MarksAnalysis'
+                    ), function() {
+
+                Route::group(array(
+                    'prefix' => 'DefaultedList',
+                    'as' => 'DefaultedList.',
+                        ), function() {
+
+                    Route::get('/', array(
+                        'uses' => 'DefaultedListController@Index',
+                        'as' => 'Index'
+                    ));
+
+                    Route::get('GetTeachersByInstituteBranchVersionID/{IbvID}', array(
+                        'as' => 'GetTeachersByInstituteBranchVersionID',
+                        'uses' => 'DefaultedListController@GetTeachersByInstituteBranchVersionID',
+                    ))->where('IbvID', '[0-9]+');
+                    Route::get('GetExamSubHeadsByExamHeadID/{ExamHeadID}', array(
+                        'as' => 'GetExamSubHeadsByExamHeadID',
+                        'uses' => 'DefaultedListController@GetExamSubHeadsByExamHeadID',
+                    ))->where('ExamHeadID', '[0-9]+');
+                    Route::post('Show', array(
+                        'uses' => 'DefaultedListController@Show'
+                    ));
+                });
+            });
+});

@@ -1,0 +1,360 @@
+<?php
+
+namespace App\Http\Controllers\LoggedIn\Settings;
+
+use Illuminate\Http\Request;
+use App\Http\Requests;
+use App\Http\Controllers\Controller;
+use Auth;
+use DB;
+use Validator;
+use App\User;
+use App\MarksDistribution;
+
+class MarksDistributionController extends Controller {
+
+    private $ViewPagePath = 'LoggedIn.Settings.MarksDistribution.';
+    private $MenuID = 49;
+    protected $LoggedInUserInstituteBranchVersionIDPrivileges = '';
+
+    //private $RoleID = 5;
+
+    public function __construct() {
+
+
+        try {
+
+            if (session()->has('PrivilegesOfRole')) {
+                foreach (session('PrivilegesOfRole') as $IBVP) {
+                    $this->LoggedInUserInstituteBranchVersionIDPrivileges .= $IBVP->institute_branch_version_id . ', ';
+                }
+            } else {
+                $this->LoggedInUserInstituteBranchVersionIDPrivileges .= Auth::user()->institute_branch_version_id . ', ';
+            }
+
+            $this->LoggedInUserInstituteBranchVersionIDPrivileges = rtrim(trim($this->LoggedInUserInstituteBranchVersionIDPrivileges), ',');
+            //echo $this->LoggedInUserInstituteBranchVersionIDPrivileges;exit();
+        } catch (\Exception $ex) {
+            $ex->getMessage();
+        }
+    }
+
+    public function index(Request $request) {
+
+        $Data = array();
+        $Data['PageTitle'] = 'Marks Distribution';
+
+        $ExamTypes = DB::select(DB::raw('call GetExamTypes("1")'));
+        $ExamHeads = DB::select(DB::raw('call GetExamHeads("1")'));
+        $InstituteBranchVersions = DB::select(DB::raw('call GetBranchesAndVersionsByInstituteBranchVersionID("' . $this->LoggedInUserInstituteBranchVersionIDPrivileges . '")'));
+        $Classes = DB::select('call get_student_classes("2")');
+        $Groups = DB::select('call get_student_groups("2")');
+
+
+        $Data['Classes'] = $Classes;
+        $Data['Groups'] = $Groups;
+        $Data['InstituteBranchVersions'] = $InstituteBranchVersions;
+        $Data['ExamTypes'] = $ExamTypes;
+        $Data['ExamHeads'] = $ExamHeads;
+
+
+//        $ChildMenus = DB::select('call get_child_menu_list("' . $this->MenuID . '")');
+//        //echo '<pre>';print_r($Data['ChildMenus']);echo '</pre>';exit();
+//        if (!empty($ChildMenus)) {
+//
+//            $Data['ChildMenus'] = $ChildMenus;
+//            //return view('LoggedIn.Settings.Index', $Data);
+//        } else {
+        //echo $LoggedInUserInstituteBranchVersionIDPrivileges;exit();
+//            $page = $request->get('page', 1);
+//            $paginate = 10;
+//            $ExamTypes = DB::select(DB::raw('call GetExamTypes("2", "' . $this->LoggedInUserInstituteBranchVersionIDPrivileges . '")'));
+//            $Data['ExamTypes'] = $ExamTypes;
+        return view($this->ViewPagePath . 'Index', $Data);
+//        }
+    }
+
+    /* public function create() {
+
+      $Data = array();
+      $Data['PageTitle'] = 'New Marks Distribution';
+
+      $Classes = DB::select('call get_student_classes("2")');
+      $Groups = DB::select('call get_student_groups("2")');
+      $InstituteBranchVersions = DB::select(DB::raw('call GetBranchesAndVersionsByInstituteBranchVersionID("' . $this->LoggedInUserInstituteBranchVersionIDPrivileges . '")'));
+
+      $Data['Classes'] = $Classes;
+      $Data['Groups'] = $Groups;
+      $Data['InstituteBranchVersions'] = $InstituteBranchVersions;
+
+      return view($this->ViewPagePath . 'Create', $Data);
+      }
+     */
+
+    public function store(Request $request) {
+        //echo '<pre>';print_r($request->all());echo '</pre>';exit();
+        $validator = Validator::make($request->all(), [
+                    'Class' => 'required',
+                    'Group' => 'required',
+                    'Branch' => 'required',
+                    'ExamType' => 'required',
+                    'ExamSubHead' => 'required|min:1',
+                    'Subject' => 'required',
+                        /* 'AttendedStudentID' => 'required',
+                          'StudentName' => 'required',
+                          'StudentID' => 'required', */
+        ]);
+
+        if ($validator->fails()) {
+            return redirect(route($this->ViewPagePath . 'Create'))
+                            ->withErrors($validator)
+                            ->withInput();
+        }
+
+
+        $Subject = $request->input('Subject');
+        //$ExamHead = $request->input('ExamHead');
+        $ExamType = $request->input('ExamType');
+        //$SubjectCode = $request->input('SubjectCode');
+        $Class = $request->input('Class');
+        $Group = $request->input('Group');
+        $Branch = $request->input('Branch');
+        $Marks = $request->input('Marks');
+        $InputFrom = $request->input('InputFrom');
+        $InputTo = $request->input('InputTo');
+        $MarksDistribution = $request->input('MarksDistribution');
+        $ExamSubHead = $request->input('ExamSubHead');
+        $TotalMarks = count($Marks);
+        $TotalInputFrom = count($InputFrom);
+        $TotalInputTo = count($InputTo);
+        $TotalMarksDistribution = count($MarksDistribution);
+        $TotalExamSubHead = count($ExamSubHead);
+
+        $MessageType = 'SuccessMessage';
+        $Message = 'Marks Distribution inserted successfully.';
+//        echo $TotalMarks . $TotalInputFrom . $TotalInputTo . $TotalMarksDistribution . $TotalExamSubHead;exit();
+        try {
+
+            if ($TotalMarks == $TotalInputFrom && $TotalInputFrom == $TotalInputTo && $TotalInputTo == $TotalMarksDistribution && $TotalMarksDistribution == $TotalExamSubHead) {
+                for ($i = 0; $i < $TotalMarks; $i++) {
+
+                    $Md = $MarksDistribution[$i] == 0 ? new MarksDistribution : MarksDistribution::find($MarksDistribution[$i]);
+
+                    $Md->subject_id = $Subject;
+                    $Md->class_id = $Class;
+                    $Md->group_id = $Group;
+                    $Md->institute_branch_version_id = $Branch;
+                    $Md->exam_type_id = $ExamType;
+                    $Md->exam_sub_head_id = $ExamSubHead[$i];
+                    $Md->marks = $Marks[$i];
+                    $Md->input_from = date('Y-m-d', strtotime($InputFrom[$i]));
+                    $Md->input_to = date('Y-m-d', strtotime($InputTo[$i]));
+                    $Md->is_active = 1;
+$Md->create_time = date('Y-m-d h:i:s');
+            $Md->create_logon_id = session('sessLogonId');
+            $Md->create_user_id = Auth::user()->user_id;
+            $Md->last_action = 'INSERT';
+                    $Md->save();
+                }
+            }
+
+
+//            $ExamSubHead->create_time = date('Y-m-d h:i:s');
+//            $ExamSubHead->create_logon_id = session('sessLogonId');
+//            $ExamSubHead->create_user_id = Auth::user()->user_id;
+//            $ExamSubHead->last_action = 'INSERT';
+//            $ExamSubHead->save();
+        } catch (\Exception $ex) {
+
+            $MessageType = 'ErrorMessage';
+            $Message = $ex->getMessage();
+        }
+
+        return redirect()->route($this->ViewPagePath . 'Show', array(
+                            'IbvID' => $Branch,
+                            'ClassID' => $Class,
+                            'GroupID' => $Group,
+                            'ExamTypeID' => $ExamType,
+                            'SubjectID' => $Subject,
+                        ))
+                        ->with($MessageType, $Message);
+    }
+
+    public function GetSectionsByBranchIdAndClassIdAndGroupId($IbvID, $ClassID, $GroupID) {
+
+        //echo $IbvID . '--' . $ClassID . '--' . $GroupID;exit();
+        $Sections = DB::table('tbl_sec_sections as tss')
+                ->select('s.SectionName', 's.section_id', 'tss.sec_section_id')
+                ->join('sectioninfo as s', 's.section_id', '=', 'tss.section_id')
+                //->where('tss.is_active', 1)
+                ->where('tss.institute_branch_version_id', $IbvID)
+                ->where('tss.class_id', $ClassID)
+                //->where('group_id', $GroupID)
+                ->get();
+
+        echo '<select name="Section" class="form-control" id="Section">';
+        echo '<option value="">----- Select ------</option>';
+        if (!empty($Sections)) {
+            foreach ($Sections as $s) {
+                echo '<option value="' . $s->section_id . '">' . $s->SectionName . '</option>';
+            }
+        }
+        echo '</select>';
+    }
+
+    public function GetSubjectsByBranchAndClassAndGroupId($IbvID, $ClassID, $GroupID) {
+
+        //echo $IbvID . '--' . $ClassID . '--' . $GroupID;exit();
+
+
+        echo '<select class="form-control Subject" id="Subject" name="Subject"><option value="">----- Subject -----</option>';
+        if (!empty($Subjects)) {
+            foreach ($Subjects as $et) {
+                echo '<option value="' . $et->subject_id . '">' . $et->subject_name . '(' . $et->subject_code . ')' . '</option>';
+            }
+        }
+
+        echo '</select>';
+    }
+
+//    
+
+    public function Show(Request $request) {
+
+        $validator = Validator::make($request->all(), [
+                    'Class' => 'required',
+                    'Group' => 'required',
+                    'Branch' => 'required',
+                    'ExamType' => 'required',
+                        //'ExamHead' => 'required',
+                        /* 'AttendedStudentID' => 'required',
+                          'StudentName' => 'required',
+                          'StudentID' => 'required', */
+        ]);
+
+        if ($validator->fails()) {
+            return view('Layouts.FormValidationErrors')
+                            ->withErrors($validator);
+        }
+
+        $IbvID = $request->input('Branch');
+        $ClassID = $request->input('Class');
+        $GroupID = $request->input('Group');
+        $ExamTypeID = $request->input('ExamType');
+        $ExamHead = $request->input('ExamHead') ? $request->input('ExamHead') : 0;
+        //echo $ExamHead;exit();
+        $ExamSubHeads = DB::select(DB::raw('call GetExamSubHeads("1", "' . $ExamHead . '")'));
+        $Data = array();
+        $Data['ExamSubHeads'] = $ExamSubHeads;
+
+        $Subjects = DB::table('tbl_subjects')
+                ->select('subject_id', 'subject_name', 'subject_code')
+                ->where('is_active', 1)
+                ->where('institute_branch_version_id', $IbvID)
+                ->where('class_id', $ClassID)
+                ->where('group_id', $GroupID)
+                ->get();
+
+
+        $ExistingMarksDistributions = array();
+        $ExistingMarksDistributions[0] = array(
+            'ExistingID' => 0,
+            'MarksDistributionID' => 0,
+            'FullMarks' => 0,
+            'InputFrom' => 0,
+            'InputTo' => 0,
+            'IsActive' => 0,
+        );
+        foreach ($Subjects as $sub) {
+            foreach ($ExamSubHeads as $esh) {
+                $IsExist = DB::table('tbl_marks_distributions')
+                        ->select('marks_distribution_id', 'full_marks', 'allowed_input_date_time_from', 'allowed_input_date_time_to', 'is_active')
+                        ->where('subject_id', $sub->subject_id)
+                        ->where('class_id', $ClassID)
+                        ->where('group_id', $GroupID)
+                        ->where('institute_branch_version_id', $IbvID)
+                        ->where('exam_type_id', $ExamTypeID)
+                        ->where('exam_sub_head_id', $esh->exam_sub_head_id)
+                        ->where('exam_head_id', $ExamHead)
+                        ->first();
+                if (!empty($IsExist)) {
+                    $ExistingMarksDistributions[] = array(
+                        'ExistingID' => $IbvID . '-' . $ClassID . '-' . $GroupID . '-' . $ExamTypeID . '-' . $esh->exam_head_id . '-' . $esh->exam_sub_head_id . '-' . $sub->subject_id,
+                        'MarksDistributionID' => $IsExist->marks_distribution_id,
+                        'FullMarks' => $IsExist->full_marks,
+                        'InputFrom' => $IsExist->allowed_input_date_time_from,
+                        'InputTo' => $IsExist->allowed_input_date_time_to,
+                        'IsActive' => $IsExist->is_active,
+                    );
+                }
+            }
+        }
+
+
+
+        $Data['IbvID'] = $IbvID;
+        $Data['ClassID'] = $ClassID;
+        $Data['GroupID'] = $GroupID;
+        $Data['ExamTypeID'] = $ExamTypeID;
+        $Data['Subjects'] = $Subjects;
+        $Data['ExistingMarksDistributions'] = $ExistingMarksDistributions;
+        //echo 'hi';
+        return view($this->ViewPagePath . 'Show', $Data);
+    }
+
+    public function Save(Request $request) {
+
+//        echo '<pre>';
+//        print_r($request->all());
+//        echo '</pre>';
+//        exit();
+
+        $Student = $request->input('Student');
+        $Subject = $request->input('Subject');
+        $ExamHead = $request->input('ExamHead');
+        $ExamType = $request->input('ExamType');
+        $ExamSubHead = $request->input('ExamSubHead');
+        $Class = $request->input('Class');
+        $Group = $request->input('Group');
+        $Branch = $request->input('Branch');
+        $Section = $request->input('Section');
+        $Marks = $request->input('FullMarks') == '' ? 0 : $request->input('FullMarks');
+        $InputFrom = $request->input('From');
+        $InputTo = $request->input('To');
+        $IsActive = $request->input('IsActive');
+        $MarksDistribution = $request->input('MarksDistribution');
+
+//        $TotalMarks = count($Marks);
+//        $TotalInputFrom = count($InputFrom);
+//        $TotalInputTo = count($InputTo);
+//        $TotalMarksDistribution = count($MarksDistribution);
+//        $TotalExamSubHead = count($ExamSubHead);
+
+        $Md = $MarksDistribution == 0 ? new MarksDistribution : MarksDistribution::find($MarksDistribution);
+        $Md->subject_id = $Subject;
+        $Md->class_id = $Class;
+        $Md->group_id = $Group;
+        $Md->institute_branch_version_id = $Branch;
+        $Md->exam_type_id = $ExamType;
+        $Md->exam_sub_head_id = $ExamSubHead;
+        $Md->exam_head_id = $ExamHead;
+        $Md->full_marks = $Marks;
+        $Md->allowed_input_date_time_from = date('Y-m-d', strtotime($InputFrom));
+        $Md->allowed_input_date_time_to = date('Y-m-d', strtotime($InputTo));
+        $Md->is_active = $IsActive;
+if($MarksDistribution == 0){
+            $Md->create_time = date('Y-m-d h:i:s');
+            $Md->create_logon_id = session('sessLogonId');
+            $Md->create_user_id = Auth::user()->user_id;
+            $Md->last_action = 'INSERT';
+        }else{
+            $Md->update_time = date('Y-m-d h:i:s');
+        $Md->update_logon_id = session('sessLogonId');
+        $Md->update_user_id = Auth::user()->user_id;
+        $Md->last_action = 'UPDATE';
+        }
+        $Md->save();
+        //echo 'Data updated successfully!';
+    }
+
+}

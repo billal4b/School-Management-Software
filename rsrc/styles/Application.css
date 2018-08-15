@@ -1,0 +1,119 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Jan 22, 2017, 5:56:23 PM
+    Author     : maxproits
+*/
+
+body{
+    /*background: #F5F8FA;*/
+/*background: #F5F5F5;*/
+/*font-size: 12px;*/
+}
+
+.vertical-center {
+    min-height: 100%;  /* Fallback for browsers do NOT support vh unit */
+    min-height: 100vh; /* These two lines are counted as one :-)       */
+    display: flex;
+    align-items: center;
+}
+
+.panel{
+    border-radius: 0;
+}
+.btn{
+    border-radius: 0;
+}
+.form-group-sm .form-control{
+    border-radius: 0;
+}
+.alert, .input-group-addon, .form-control{
+    border-radius: 0;
+}
+.panel-heading{
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    /*padding: 5px;*/
+}
+.panel-title{
+    /*font-size: 13px;*/
+}
+.panel-body{
+    /*padding: 5px;*/
+}
+/*.pagination{
+    border-radius: 0;
+    /*padding: 0px;
+}
+
+.pagination > li:last-child > a, .pagination > li:last-child > span {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+.pagination > li:first-child > a, .pagination > li:first-child > span {
+    margin-left: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+*/
+
+table{
+    padding: 5px;
+}
+
+table.dataTable thead th, table.dataTable tbody td {
+    padding: 5px;
+}
+.checkbox, .radio{
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.navbar-nav > li > a {
+/*    padding-top: 0;
+    padding-bottom: 0;*/
+/*padding: 5px;*/
+}
+.navbar{
+    /*min-height: auto;*/
+    border-radius: 0;
+}
+.navbar-brand{
+                padding: 0;
+            }
+
+
+
+/* Start by setting display:none to make this hidden.
+   Then we position it in relation to the viewport window
+   with position:fixed. Width, height, top and left speak
+   for themselves. Background we set to 80% white with
+   our animation centered, and no-repeating */
+.ajaxLoadModal {
+    display:    none;
+    position:   fixed;
+    z-index:    1000;
+    top:        0;
+    left:       0;
+    height:     100%;
+    width:      100%;
+    background: rgba( 255, 255, 255, .8 ) 
+                url('../multimedia/loading.gif') 
+                50% 50% 
+                no-repeat;
+}
+
+/* When the body has the loading class, we turn
+   the scrollbar off with overflow:hidden */
+body.loading {
+    overflow: hidden;   
+}
+
+/* Anytime the body has the loading class, our
+   modal element will be visible */
+body.loading .ajaxLoadModal {
+    display: block;
+}

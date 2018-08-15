@@ -1,0 +1,151 @@
+<?php ?>
+<div class="row">
+    <div class="col-sm-12">
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">As a teacher</h3>
+            </div>
+            <div class="panel-body">
+
+                <table class="table table-condensed table-striped table-bordered" style="" id="Tbl_MarksViewAsTeacher">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Group</th>
+                            <th>Section</th>
+                            <th>Subject</th>
+                            <th>Marks Input?</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        <?php
+                        if (isset($TeacherPrivilege)) {
+                            $Counter = 1;
+                            foreach ($TeacherPrivilege as $Tp) {
+                                ?>
+                                <tr>
+                                    <td><?php echo $Tp->ClassName; ?></td>
+                                    <td><?php echo $Tp->GroupName; ?></td>
+                                    <td><?php echo $Tp->SectionName; ?></td>
+                                    <td><?php echo $Tp->subject_name; ?></td>
+                                    <?php
+                                    $CheckIsMarksInputedByTeacher = DB::table('tbl_marks_input')
+                                            ->select('marks_input_id')
+                                            ->where('exam_type_id', $ExamTypeID)
+                                            ->where('exam_head_id', $ExamHeadID)
+                                            ->where('exam_sub_head_id', $ExamSubHeadID)
+                                            ->where('class_id', $Tp->class_id)
+                                            ->where('group_id', $Tp->group_id)
+                                            ->where('institute_branch_version_id', $Tp->institute_branch_version_id)
+                                            ->where('subject_id', $Tp->subject_id)
+                                            ->where('section_id', $Tp->section_id)
+                                            ->count();
+//                                            echo '<td>' . $CheckIsMarksInputedByTeacher . '</td>';
+                                    if ($CheckIsMarksInputedByTeacher > 0) {
+                                        echo '<td class="text-center"><i class="fa fa-check text-success"></i></td>';
+                                    } else {
+                                        echo '<td class="text-center"><i class="fa fa-times text-danger"></i></td>';
+                                    }
+                                    ?>
+                                </tr>
+                                <?php
+                            }
+                        }
+                        ?>
+
+                    </tbody>
+
+
+                </table>
+
+            </div>
+        </div>
+
+
+
+    </div>
+
+</div>
+
+<div class="row">
+    <div class="col-sm-12">
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">As a class teacher</h3>
+            </div>
+            <div class="panel-body">
+
+                <table class="table table-condensed table-striped table-bordered" style="" id="Tbl_MarksViewAsClassTeacher">
+                    <thead>
+                        <tr>
+                            <th>Class</th>
+                            <th>Group</th>
+                            <th>Section</th>
+                            <th>Subject</th>
+                            <th>Marks Input?</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        <?php
+                        if (isset($ClassTeacher)) {
+                            foreach ($ClassTeacher as $Tp) {
+                                ?>
+                                <tr>
+                                    <td><?php echo $Tp->ClassName; ?></td>
+                                    <td><?php echo $Tp->GroupName; ?></td>
+                                    <td><?php echo $Tp->SectionName; ?></td>
+                                    <td><?php echo $Tp->subject_name; ?></td>
+                                    <?php
+                                    $CheckIsMarksInputedByTeacher = DB::table('tbl_marks_input')
+                                            ->select('marks_input_id')
+                                            ->where('exam_type_id', $ExamTypeID)
+                                            ->where('exam_head_id', $ExamHeadID)
+                                            ->where('exam_sub_head_id', $ExamSubHeadID)
+                                            ->where('class_id', $Tp->class_id)
+                                            ->where('group_id', $Tp->group_id)
+                                            ->where('institute_branch_version_id', $Tp->institute_branch_version_id)
+                                            ->where('subject_id', $Tp->subject_id)
+                                            ->where('section_id', $Tp->section_id)
+                                            ->count();
+//                                            echo '<td>' . $CheckIsMarksInputedByTeacher . '</td>';
+                                    if ($CheckIsMarksInputedByTeacher > 0) {
+                                        echo '<td class="text-center"><i class="fa fa-check text-success"></i></td>';
+                                    } else {
+                                        echo '<td class="text-center"><i class="fa fa-times text-danger"></i></td>';
+                                    }
+//                                            echo '<td>hi</td>';
+                                    ?>
+                                </tr>
+                                <?php
+                            }
+                        }
+                        ?>
+
+                    </tbody>
+
+
+                </table>
+
+            </div>
+        </div>
+
+
+
+    </div>
+
+</div>
+
+<!--<div class="table-responsive">-->
+
+<!--</div>-->
+
+<script>
+    $(document).ready(function () {
+    });
+</script>

@@ -1,0 +1,56 @@
+@extends('Layouts.Application')
+
+@section('MainContent')
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="panel panel-default">
+		<div class="panel-heading">
+			 <h6 class="panel-title">Update Your Profile</h6>
+	    </div>		 
+            <div class="panel-body">
+                 @include('Layouts.FormValidationErrors')
+                 @include('Layouts.ErrorSuccessAndWarninMessages')
+               
+
+                <form class="form-horizontal" role="form" method="POST" action="{{ url(route('LoggedIn.Home.updateOwnProfileAction')) }}">
+                    {{ csrf_field() }}
+                   <div class="form-group form-group-sm">
+                        <label for="full_name" class="col-sm-1 control-label text-danger">Full Name</label>
+                        <div class="col-sm-6">
+                            <input type="text" class="form-control" id="full_name" name="full_name" 
+							value="{{Auth::user()->full_name}}">
+                        </div>
+                        <label for="email" class="col-sm-1 control-label text-danger">E-mail</label>
+                        <div class="col-sm-4">
+                            <input type="text" class="form-control" id="email" name="email"value="{{Auth::user()->email }}">
+                        </div>
+                    </div>
+					 <div class="form-group form-group-sm">
+                        
+                        <label for="phone_no" class="col-sm-1 control-label text-danger">Phone No.</label>
+                        <div class="col-sm-3">
+                            <input type="text" class="form-control" id="phone_no" name="phone_no" 
+							value="{{ Auth::user()->phone_no }}">
+                        </div>
+                    </div>
+   
+                   
+					 
+       
+
+                    <div class="form-group form-group-sm">
+					<div class="col-sm-12">
+                            <button type="submit" class="btn btn-primary btn-sm btn-block"><i class="fa fa-floppy-o"></i>&nbsp;Save</button>
+                        </div>
+                       
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@endsection

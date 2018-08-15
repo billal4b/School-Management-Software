@@ -1,0 +1,28 @@
+@extends('Layouts.Application')
+
+@section('MainContent')
+
+<div class="row">
+@include('Layouts.FormValidationErrors')
+                @include('Layouts.ErrorSuccessAndWarninMessages')
+<!--    <div class="col-sm-12">
+
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">General Information</h3>
+            </div>
+            <div class="panel-body">-->
+
+                <div class="col-md-12 text-center text-bold">
+                    <h2>Welcome {{ Auth::user()->full_name }}</h2>
+                </div>
+
+<!--            </div>
+        </div>
+
+
+
+    </div>-->
+</div>
+
+@endsection

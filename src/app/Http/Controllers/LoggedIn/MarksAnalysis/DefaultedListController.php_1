@@ -1,0 +1,154 @@
+<?php
+
+namespace App\Http\Controllers\LoggedIn\MarksAnalysis;
+
+use Illuminate\Http\Request;
+use App\Http\Requests;
+use App\Http\Controllers\Controller;
+use Auth;
+use DB;
+use Validator;
+use App\User;
+use PDF;
+
+class DefaultedListController extends Controller {
+
+    private $ViewPagePath = 'LoggedIn.MarksAnalysis.DefaultedList.';
+//    private $MenuID = 28;
+    protected $LoggedInUserInstituteBranchVersionIDPrivileges = '';
+    private $RoleID = 5;
+
+    public function __construct() {
+
+
+        try {
+
+            if (session()->has('PrivilegesOfRole')) {
+                foreach (session('PrivilegesOfRole') as $IBVP) {
+                    $this->LoggedInUserInstituteBranchVersionIDPrivileges .= $IBVP->institute_branch_version_id . ', ';
+                }
+            } else {
+                $this->LoggedInUserInstituteBranchVersionIDPrivileges .= Auth::user()->institute_branch_version_id . ', ';
+            }
+
+            $this->LoggedInUserInstituteBranchVersionIDPrivileges = rtrim(trim($this->LoggedInUserInstituteBranchVersionIDPrivileges), ',');
+            //echo $this->LoggedInUserInstituteBranchVersionIDPrivileges;exit();
+        } catch (\Exception $ex) {
+            $ex->getMessage();
+        }
+    }
+
+    public function Index(Request $request) {
+
+        $Data = array();
+        $Data['PageTitle'] = 'Defaulted List';
+
+//        $Teachers = DB::select(DB::raw('call GetTeachers("1", "' . $this->LoggedInUserInstituteBranchVersionIDPrivileges . '")'));
+//        $Data['Teachers'] = $Teachers;
+
+        $InstituteBranchVersions = DB::select(DB::raw('call GetBranchesAndVersionsByInstituteBranchVersionID("' . $this->LoggedInUserInstituteBranchVersionIDPrivileges . '")'));
+        $ExamTypes = DB::select(DB::raw('call GetExamTypes("1")'));
+        $ExamHeads = DB::select(DB::raw('call GetExamHeads("1")'));
+        $ExamSubHeads = DB::select(DB::raw('call GetExamSubHeads("1", "0")'));
+
+        $Data['InstituteBranchVersions'] = $InstituteBranchVersions;
+        $Data['ExamTypes'] = $ExamTypes;
+        $Data['ExamHeads'] = $ExamHeads;
+        $Data['ExamSubHeads'] = $ExamSubHeads;
+
+        return view($this->ViewPagePath . 'Index', $Data);
+    }
+
+    public function GetExamSubHeadsByExamHeadID($ExamHeadID) {
+
+        $ExamSubHeads = DB::select(DB::raw('call GetExamSubHeads("1", "' . $ExamHeadID . '")'));
+        //echo '<pre>';print_r($ExamSubHeads);echo '</pre>';exit();
+        echo '<select class="form-control ExamSubHead" id="ExamSubHead" name="ExamSubHead">';
+        echo '<option value="">----- Exam Sub Head -----</option>';
+        if (!empty($ExamSubHeads)) {
+            foreach ($ExamSubHeads as $t) {
+                echo '<option value="' . $t->exam_sub_head_id . '">' . $t->exam_sub_head_alias . '</option>';
+            }
+        }
+        echo '</select>';
+        //return view($this->ViewPagePath . 'GetTeachersByInstituteBranchVersionID', $Data);
+    }
+
+    public function GetTeachersByInstituteBranchVersionID($IbvID) {
+
+        $Teachers = User::select('user_id', 'full_name', 'school_provided_teacher_id')
+                ->where('institute_branch_version_id', $IbvID)
+                ->where('is_active', 1)
+                ->where('role_id', $this->RoleID)
+                //->orderBy('school_provided_teacher_id', 'asc')
+                ->orderBy('full_name', 'asc')
+                ->get();
+        //$Data['Teachers'] = $Teachers;
+        //echo '<pre>';print_r($Teachers);echo '</pre>';exit();
+        echo '<select class="form-control TeacherId" id="TeacherId" name="TeacherId">';
+        echo '<option value="">----- Teacher -----</option>';
+        if (!empty($Teachers)) {
+            foreach ($Teachers as $t) {
+                echo '<option value="' . $t->user_id . '">' . $t->full_name . ' --- ' . $t->school_provided_teacher_id . '</option>';
+            }
+        }
+        echo '</select>';
+        echo '<script type="text/javascript">$(document).ready(function () { $("#TeacherId").select2(); });</script>';
+        //return view($this->ViewPagePath . 'GetTeachersByInstituteBranchVersionID', $Data);
+    }
+
+    public function Show(Request $request) {
+        //echo '<pre>';print_r($request->all());echo '</pre>';exit();
+
+        $TeacherPrivilege = DB::table('tbl_assigned_subjects_to_teachers as tastt')
+                ->select('tastt.subject_id', 'ts.subject_name', 'tastt.class_id', 'tastt.group_id', 'tastt.section_id', 'ci.ClassName', 'sg.GroupName', 'si.SectionName', 'si.section_id', 'ci.id as class_id', 'sg.id as group_id', 'tastt.institute_branch_version_id')
+                ->join('tbl_subjects as ts', 'ts.subject_id', '=', 'tastt.subject_id')
+                ->join('classinfo as ci', 'ci.id', '=', 'tastt.class_id')
+                ->join('stugrp as sg', 'sg.id', '=', 'tastt.group_id')
+                ->join('sectioninfo as si', 'si.section_id', '=', 'tastt.section_id')
+                ->where('tastt.user_id', $request->TeacherId)
+                ->orderBy('ts.subject_code', 'asc')
+//                ->where('tastt.class_id', $ClassID)
+//                ->where('tastt.section_id', $SectionID)
+//                ->where('tastt.group_id', $GroupID)
+                ->where('tastt.is_active', 1)
+                ->get();
+
+        $ClassTeacher = DB::select('select 
+    ci.id class_id,
+	ci.ClassName,
+	sg.id group_id,
+	sg.GroupName,
+	si.section_id,
+	si.SectionName,
+	ts.subject_id,
+	ts.subject_name,
+        tst.institute_branch_version_id
+from
+    tbl_class_teachers tst
+        inner join
+    tbl_subjects ts ON (ts.class_id = tst.class_id
+        and tst.institute_branch_version_id = ts.institute_branch_version_id
+        and ts.group_id = tst.group_id)
+	inner join classinfo ci on ci.id = tst.class_id
+	inner join stugrp sg on sg.id = tst.group_id
+	inner join sectioninfo si on si.section_id = tst.section_id
+where
+    tst.user_id = ' . $request->TeacherId . ' and tst.is_active = 1 and ts.is_active = 1 order by ts.subject_code asc');
+        
+        
+        $Data['TeacherPrivilege'] = $TeacherPrivilege;
+        $Data['ClassTeacher'] = $ClassTeacher;
+        $Data['ExamTypeID'] = $request->ExamType;
+        $Data['ExamHeadID'] = $request->ExamHead;
+        $Data['ExamSubHeadID'] = $request->ExamSubHead;
+
+//        echo '<pre>';
+//        print_r($TeacherPrivilege);
+//        echo '</pre>';
+//        exit();
+
+        return view($this->ViewPagePath . 'Show', $Data);
+    }
+
+}
